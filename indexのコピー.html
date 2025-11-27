@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Asset Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Noto Sans JP', sans-serif; }
+        /* カスタムスクロールバー */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 900: '#0f172a', 800: '#1e293b', 700: '#334155' },
+                        accent: { green: '#10b981', red: '#f43f5e', blue: '#3b82f6' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark-900 text-slate-200 min-h-screen">
+
+    <nav class="border-b border-dark-700 bg-dark-900/95 sticky top-0 z-50 backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/30">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight text-white">AssetView</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="fetchSheetData()" class="p-2 text-emerald-400 hover:text-emerald-300 transition-colors" title="データ更新">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 border-2 border-dark-800"></div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- 1. KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            <!-- Total Asset -->
+            <div class="bg-gradient-to-br from-dark-800 to-dark-900 rounded-xl p-5 border border-indigo-500/30 shadow-lg relative overflow-hidden group hover:border-indigo-500 transition-all duration-300 lg:col-span-1 sm:col-span-2">
+                <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity"><i class="fa-solid fa-wallet text-5xl text-indigo-400"></i></div>
+                <h3 class="text-indigo-400 text-xs font-bold uppercase tracking-wider mb-1">総資産 (Total)</h3>
+                <div class="text-2xl font-bold text-white mb-1" id="display-total">Loading...</div>
+                <div class="flex items-center text-xs font-medium" id="mom-container">
+                    <i class="fa-solid fa-minus mr-1" id="mom-icon"></i>
+                    <span id="display-mom-diff" class="mr-2 font-bold">--</span>
+                    <span id="display-mom">--</span>
+                    <span class="text-slate-500 ml-1">(前月比)</span>
+                </div>
+            </div>
+            <!-- Cash -->
+            <div class="bg-dark-800 rounded-xl p-5 border border-dark-700 shadow-lg relative overflow-hidden hover:border-blue-500/50 transition-all duration-300">
+                <div class="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity"><i class="fa-solid fa-building-columns text-4xl text-blue-400"></i></div>
+                <h3 class="text-slate-400 text-xs font-medium mb-1">現金・預金</h3>
+                <div class="flex justify-between items-end mb-2">
+                    <div class="text-xl font-bold text-slate-200" id="display-cash">...</div>
+                    <div class="text-sm font-bold text-blue-500" id="percent-cash">-%</div>
+                </div>
+                <div class="w-full bg-dark-900 h-1.5 rounded-full overflow-hidden"><div class="bg-blue-500 h-full transition-all duration-1000" style="width: 0%" id="bar-cash"></div></div>
+            </div>
+            <!-- Stock -->
+            <div class="bg-dark-800 rounded-xl p-5 border border-dark-700 shadow-lg relative overflow-hidden hover:border-amber-500/50 transition-all duration-300">
+                <div class="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity"><i class="fa-solid fa-chart-line text-4xl text-amber-400"></i></div>
+                <h3 class="text-slate-400 text-xs font-medium mb-1">株式 (国内/米国)</h3>
+                <div class="flex justify-between items-end mb-2">
+                    <div class="text-xl font-bold text-slate-200" id="display-stock">...</div>
+                    <div class="text-sm font-bold text-amber-500" id="percent-stock">-%</div>
+                </div>
+                <div class="w-full bg-dark-900 h-1.5 rounded-full overflow-hidden"><div class="bg-amber-500 h-full transition-all duration-1000" style="width: 0%" id="bar-stock"></div></div>
+            </div>
+            <!-- Trust -->
+            <div class="bg-dark-800 rounded-xl p-5 border border-dark-700 shadow-lg relative overflow-hidden hover:border-emerald-500/50 transition-all duration-300">
+                <div class="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity"><i class="fa-solid fa-leaf text-4xl text-emerald-400"></i></div>
+                <h3 class="text-slate-400 text-xs font-medium mb-1">投資信託</h3>
+                <div class="flex justify-between items-end mb-2">
+                    <div class="text-xl font-bold text-slate-200" id="display-trust">...</div>
+                    <div class="text-sm font-bold text-emerald-500" id="percent-trust">-%</div>
+                </div>
+                <div class="w-full bg-dark-900 h-1.5 rounded-full overflow-hidden"><div class="bg-emerald-500 h-full transition-all duration-1000" style="width: 0%" id="bar-trust"></div></div>
+            </div>
+            <!-- Crypto -->
+            <div class="bg-dark-800 rounded-xl p-5 border border-dark-700 shadow-lg relative overflow-hidden hover:border-purple-500/50 transition-all duration-300">
+                <div class="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity"><i class="fa-brands fa-bitcoin text-4xl text-purple-400"></i></div>
+                <h3 class="text-slate-400 text-xs font-medium mb-1">暗号資産</h3>
+                <div class="flex justify-between items-end mb-2">
+                    <div class="text-xl font-bold text-slate-200" id="display-crypto">...</div>
+                    <div class="text-sm font-bold text-purple-500" id="percent-crypto">-%</div>
+                </div>
+                <div class="w-full bg-dark-900 h-1.5 rounded-full overflow-hidden"><div class="bg-purple-500 h-full transition-all duration-1000" style="width: 0%" id="bar-crypto"></div></div>
+            </div>
+        </div>
+
+        <!-- 2. Trend Chart -->
+        <div class="bg-dark-800 rounded-xl p-4 sm:p-6 border border-dark-700 shadow-xl mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-emerald-400"></i> 資産推移
+                </h3>
+                <select id="periodSelector" onchange="updateChartPeriod(this.value)" class="bg-dark-900 border border-dark-700 text-xs sm:text-sm rounded px-2 py-1 focus:outline-none focus:border-indigo-500 text-slate-300">
+                    <option value="3">3ヶ月</option>
+                    <option value="6">6ヶ月</option>
+                    <option value="12" selected>1年</option>
+                    <option value="36">3年</option>
+                    <option value="60">5年</option>
+                    <option value="0">全期間</option>
+                </select>
+            </div>
+            <div class="relative h-64 sm:h-72 w-full">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 3. Market Overview (Chart Switcher) -->
+        <div class="bg-dark-800 rounded-xl border border-dark-700 shadow-xl mb-8 overflow-hidden h-96 sm:h-[500px] flex flex-col">
+            <div class="bg-dark-900/90 p-3 border-b border-dark-700 flex items-center justify-between shrink-0">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-globe text-blue-400"></i> Market Overview
+                </h3>
+                <!-- 銘柄選択ドロップダウン -->
+                <select id="marketSymbolSelector" onchange="updateMarketChart(this.value)" class="bg-dark-900 border border-dark-700 text-xs rounded px-2 py-1 focus:outline-none focus:border-indigo-500 text-slate-300 max-w-[200px]">
+                    <option value="FOREXCOM:SPX500">S&P 500</option>
+                    <option value="FOREXCOM:NAS100">NASDAQ 100</option>
+                    <option value="FX:USDJPY">USD/JPY</option>
+                    <!-- JSで保有銘柄を追加します -->
+                </select>
+            </div>
+
+            <!-- TradingView Widget Container -->
+            <div id="tradingview-container" class="grow relative w-full h-full">
+                <!-- ここにJSでウィジェットを挿入します -->
+            </div>
+        </div>
+
+        <!-- 4. Stock Details -->
+        <div class="mb-8">
+            <div class="bg-dark-800 rounded-xl border border-dark-700 shadow-xl overflow-hidden flex flex-col">
+                <div class="p-4 sm:p-6 border-b border-dark-700 flex justify-between items-center shrink-0">
+                    <div class="flex flex-col gap-2 sm:gap-0 sm:flex-row sm:items-center">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2 mr-4">
+                            <i class="fa-solid fa-chart-simple text-amber-400"></i> 株式詳細
+                        </h3>
+                        <!-- 並び替え選択肢 -->
+                        <select id="stockSortSelector" onchange="renderStocksTable()" class="bg-dark-900 border border-dark-700 text-xs rounded px-2 py-1 focus:outline-none focus:border-indigo-500 text-slate-300 w-full sm:w-auto">
+                            <option value="ratio">持株比率 (降順)</option>
+                            <option value="value">市場価額 (降順)</option>
+                            <option value="gain">評価損益 (降順)</option>
+                            <option value="perf">損益率 (降順)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-center gap-4 sm:gap-6 bg-dark-900/50 px-4 py-2 rounded-lg border border-dark-700 w-full sm:w-auto overflow-x-auto">
+                        <div class="shrink-0">
+                            <div class="text-xs text-slate-500 mb-0.5">評価額合計</div>
+                            <div class="text-sm sm:text-lg font-bold text-slate-200" id="total-stock-val">...</div>
+                        </div>
+                        <div class="h-8 w-px bg-dark-700 shrink-0"></div>
+                        <div class="shrink-0">
+                            <div class="text-xs text-slate-500 mb-0.5">損益合計</div>
+                            <div class="text-sm sm:text-lg font-bold" id="total-stock-gain">...</div>
+                        </div>
+                        <div class="h-8 w-px bg-dark-700 shrink-0"></div>
+                        <div class="shrink-0">
+                            <div class="text-xs text-slate-500 mb-0.5">損益率合計</div>
+                            <div class="text-sm sm:text-lg font-bold" id="total-stock-perf">...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse whitespace-nowrap">
+                        <thead class="sticky top-0 z-10">
+                            <tr class="bg-dark-900 text-slate-400 text-xs sm:text-sm uppercase tracking-wider shadow-sm">
+                                <th class="p-3 sm:p-4 font-medium">会社名(ティッカー)</th>
+                                <th class="p-3 sm:p-4 font-medium">持株比率</th>
+                                <th class="p-3 sm:p-4 font-medium text-right">市場価額</th>
+                                <th class="p-3 sm:p-4 font-medium text-right">評価損益</th>
+                                <th class="p-3 sm:p-4 font-medium text-right">損益率</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-dark-700 text-xs sm:text-sm" id="stock-table-body">
+                            <tr><td colspan="5" class="p-4 text-center text-slate-500">Loading data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Annual Budget -->
+        <div class="bg-dark-800 rounded-xl border border-dark-700 shadow-xl overflow-hidden flex flex-col">
+            <div class="p-4 sm:p-6 border-b border-dark-700 flex justify-between items-center shrink-0">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-table-list text-blue-400"></i> 年間予算</h3>
+                <div class="text-xs sm:text-sm text-slate-400">
+                    <span class="bg-dark-900 px-2 py-1 sm:px-3 sm:py-1 rounded border border-dark-700">残り: <span class="text-white font-bold ml-1" id="total-budget-remaining">---</span></span>
+                </div>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse whitespace-nowrap">
+                    <thead class="sticky top-0 z-10">
+                        <tr class="bg-dark-900 text-slate-400 text-xs sm:text-sm uppercase tracking-wider">
+                            <th class="p-3 sm:p-4 font-medium sticky left-0 bg-dark-900 z-20">項目名</th>
+                            <th class="p-3 sm:p-4 font-medium text-right text-slate-500">2024実績</th>
+                            <th class="p-3 sm:p-4 font-medium text-right text-indigo-400">2025予算</th>
+                            <th class="p-3 sm:p-4 font-medium text-right text-slate-500">月割</th>
+                            <th class="p-3 sm:p-4 font-medium text-right">現在合計</th>
+                            <th class="p-3 sm:p-4 font-medium text-right">残り</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-dark-700 text-xs sm:text-sm" id="annual-budget-body">
+                        <tr><td colspan="6" class="p-4 text-center text-slate-500">Loading data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 6. Monthly Budget -->
+        <div class="bg-dark-800 rounded-xl border border-dark-700 shadow-xl overflow-hidden mt-8 flex flex-col">
+            <div class="p-4 sm:p-6 border-b border-dark-700 flex justify-between items-center shrink-0">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-calendar-days text-emerald-400"></i> 今月予算</h3>
+                <div class="text-xs sm:text-sm text-slate-400"><span class="bg-dark-900 px-2 py-1 sm:px-3 sm:py-1 rounded border border-dark-700">差額: <span class="text-emerald-400 font-bold ml-1" id="monthly-budget-diff">---</span></span></div>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse whitespace-nowrap">
+                    <thead class="sticky top-0 z-10">
+                        <tr class="bg-dark-900 text-slate-400 text-xs sm:text-sm uppercase tracking-wider">
+                            <th class="p-3 sm:p-4 font-medium sticky top-0 bg-dark-900">費用</th><th class="p-3 sm:p-4 font-medium text-right text-slate-500 sticky top-0 bg-dark-900">予算</th><th class="p-3 sm:p-4 font-medium text-right text-slate-200 sticky top-0 bg-dark-900">出費</th><th class="p-3 sm:p-4 font-medium text-right sticky top-0 bg-dark-900">差額</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-dark-700 text-xs sm:text-sm" id="monthly-budget-body">
+                        <tr><td colspan="4" class="p-4 text-center text-slate-500">Loading data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer class="max-w-7xl mx-auto px-4 py-6 text-center text-slate-600 text-sm">
+        &copy; 2025 Asset Dashboard Prototype.
+    </footer>
+
+    <script>
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.borderColor = '#334155';
+        Chart.defaults.font.family = "'Noto Sans JP', sans-serif";
+
+        // ★ここに新しいGASのURLを貼り付けてください★
+        const API_URL = "https://script.google.com/macros/s/AKfycbze93uC5eEqueEIhaiTn4k58AbI-K_A3A5yTQt97O2jVaPsAQ6tPW2k0xeVfGBL-o-4/exec"; 
+
+        // ★企業ドメインマッピング（ロゴ取得用）★
+        const DOMAIN_MAP = {
+            // 日本株
+            "NTT": "group.ntt", "任天堂": "nintendo.co.jp", "日清食品": "nissin.com", "トヨタ": "global.toyota", "ソニー": "sony.com", "ソフトバンク": "softbank.jp", "楽天": "rakuten.co.jp", "三菱": "mitsubishicorp.com", "eMAXIS": "mukam.jp", "ユニクロ": "fastretailing.com", "ファーストリテイリング": "fastretailing.com", "キーエンス": "keyence.co.jp", "東京エレクトロン": "tel.co.jp", "KDDI": "kddi.com", "オリエンタルランド": "olc.co.jp", "ホンダ": "global.honda", "信越化学": "shinetsu.co.jp", "伊藤忠": "itochu.co.jp", "三井住友": "smfg.co.jp",
+            // 米国株
+            "AAPL": "apple.com", "Apple": "apple.com", "MSFT": "microsoft.com", "Microsoft": "microsoft.com", "GOOGL": "google.com", "GOOG": "google.com", "Google": "google.com", "AMZN": "amazon.com", "Amazon": "amazon.com", "META": "meta.com", "Meta": "meta.com", "TSLA": "tesla.com", "Tesla": "tesla.com", "NVDA": "nvidia.com", "NVIDIA": "nvidia.com", "CRM": "salesforce.com", "Salesforce": "salesforce.com", "V": "visa.com", "Visa": "visa.com", "JNJ": "jnj.com", "PG": "pg.com", "KO": "coca-cola.com", "PEP": "pepsi.com", "COST": "costco.com", "WMT": "walmart.com", "DIS": "disney.com", "NFLX": "netflix.com", "AVGO": "broadcom.com", "Broadcom": "broadcom.com", "ABBV": "abbvie.com", "AbbVie": "abbvie.com", "VRTX": "vrtx.com", "Vertex": "vrtx.com", "LLY": "lilly.com", "Eli Lilly": "lilly.com", "UNH": "unitedhealthgroup.com", "XOM": "exxonmobil.com", "JPM": "jpmorganchase.com", "MA": "mastercard.com", "HD": "homedepot.com", "CVX": "chevron.com", "MRK": "merck.com", "ABT": "abbott.com", "PFE": "pfizer.com", "INTC": "intel.com", "AMD": "amd.com",
+            // ★追加分★
+            "RTX": "rtx.com", "Raytheon": "rtx.com", "NEE": "nexteraenergy.com", "NextEra": "nexteraenergy.com", "SBUX": "starbucks.com", "Starbucks": "starbucks.com", "CDNS": "cadence.com", "Cadence": "cadence.com",
+            // 暗号資産
+            "Bitcoin": "https://cryptologos.cc/logos/bitcoin-btc-logo.png", "Ethereum": "https://cryptologos.cc/logos/ethereum-eth-logo.png"
+        };
+
+        // ★TradingView用ティッカーマッピング (銘柄名 → シンボル)★
+        const TICKER_MAP = {
+            "S&P 500": "FOREXCOM:SPX500", // OANDAからFOREXCOMへ変更
+            // 日本株 (主要) - TradingViewでは TYO ではなく TSE を使用
+            "NTT": "TSE:9432", "日本電信電話": "TSE:9432", "9432": "TSE:9432",
+            "任天堂": "TSE:7974", "7974": "TSE:7974",
+            "日清食品": "TSE:2897", "日清食品HD": "TSE:2897", "2897": "TSE:2897",
+            "トヨタ": "TSE:7203", "トヨタ自動車": "TSE:7203", "7203": "TSE:7203",
+            "ソニー": "TSE:6758", "ソニーグループ": "TSE:6758", "6758": "TSE:6758",
+            "ソフトバンク": "TSE:9434", "9434": "TSE:9434",
+            "ソフトバンクG": "TSE:9984", "9984": "TSE:9984",
+            "楽天": "TSE:4755", "楽天グループ": "TSE:4755", "4755": "TSE:4755",
+            "三菱商事": "TSE:8058", "8058": "TSE:8058",
+            "三菱UFJ": "TSE:8306", "8306": "TSE:8306",
+            "ファーストリテイリング": "TSE:9983", "ユニクロ": "TSE:9983", "9983": "TSE:9983",
+            "キーエンス": "TSE:6861", "6861": "TSE:6861",
+            "東京エレクトロン": "TSE:8035", "8035": "TSE:8035",
+            "KDDI": "TSE:9433", "9433": "TSE:9433",
+            "オリエンタルランド": "TSE:4661", "4661": "TSE:4661",
+            "ホンダ": "TSE:7267", "本田技研工業": "TSE:7267", "7267": "TSE:7267",
+            "信越化学": "TSE:4063", "4063": "TSE:4063",
+            "伊藤忠": "TSE:8001", "伊藤忠商事": "TSE:8001", "8001": "TSE:8001",
+            "三井住友": "TSE:8316", "三井住友FG": "TSE:8316", "8316": "TSE:8316",
+            // 米国株 (主要)
+            "Apple": "NASDAQ:AAPL", "AAPL": "NASDAQ:AAPL",
+            "Microsoft": "NASDAQ:MSFT", "MSFT": "NASDAQ:MSFT",
+            "Google": "NASDAQ:GOOGL", "GOOGL": "NASDAQ:GOOGL",
+            "Amazon": "NASDAQ:AMZN", "AMZN": "NASDAQ:AMZN",
+            "Meta": "NASDAQ:META", "META": "NASDAQ:META",
+            "Tesla": "NASDAQ:TSLA", "TSLA": "NASDAQ:TSLA",
+            "NVDA": "NASDAQ:NVDA", "NVDA": "NASDAQ:NVDA",
+            "Broadcom": "NASDAQ:AVGO", "AVGO": "NASDAQ:AVGO",
+            "AbbVie": "NYSE:ABBV", "ABBV": "NYSE:ABBV",
+            "Vertex": "NASDAQ:VRTX", "VRTX": "NASDAQ:VRTX",
+            "Visa": "NYSE:V", "V": "NYSE:V",
+            "Costco": "NASDAQ:COST", "COST": "NASDAQ:COST",
+            "Coca-Cola": "NYSE:KO", "KO": "NYSE:KO",
+            "Pepsi": "NASDAQ:PEP", "PEP": "NASDAQ:PEP",
+            "P&G": "NYSE:PG", "PG": "NYSE:PG",
+            "Walmart": "NYSE:WMT", "WMT": "NYSE:WMT",
+            "Johnson & Johnson": "NYSE:JNJ", "JNJ": "NYSE:JNJ",
+            "Exxon": "NYSE:XOM", "XOM": "NYSE:XOM",
+            "JPMorgan": "NYSE:JPM", "JPM": "NYSE:JPM",
+            "Mastercard": "NYSE:MA", "MA": "NYSE:MA",
+            "Home Depot": "NYSE:HD", "HD": "NYSE:HD",
+            "Chevron": "NYSE:CVX", "CVX": "NYSE:CVX",
+            "Merck": "NYSE:MRK", "MRK": "NYSE:MRK",
+            "Abbott": "NYSE:ABT", "ABT": "NYSE:ABT",
+            "Pfizer": "NYSE:PFE", "PFE": "NYSE:PFE",
+            "Netflix": "NASDAQ:NFLX", "NFLX": "NASDAQ:NFLX",
+            "Adobe": "NASDAQ:ADBE", "ADBE": "NASDAQ:ADBE",
+            "Intel": "NASDAQ:INTC", "INTC": "NASDAQ:INTC",
+            "AMD": "NASDAQ:AMD",
+            // ★追加分★
+            "RTX": "NYSE:RTX", "Raytheon": "NYSE:RTX",
+            "NEE": "NYSE:NEE", "NextEra": "NYSE:NEE",
+            "SBUX": "NASDAQ:SBUX", "Starbucks": "NASDAQ:SBUX",
+            "CRM": "NYSE:CRM", "Salesforce": "NYSE:CRM",
+            "CDNS": "NASDAQ:CDNS", "Cadence": "NASDAQ:CDNS",
+            
+            // 暗号資産
+            "Bitcoin": "BITSTAMP:BTCUSD", "BTC": "BITSTAMP:BTCUSD",
+            "Ethereum": "BITSTAMP:ETHUSD", "ETH": "BITSTAMP:ETHUSD"
+        };
+
+        let chartTrend, chartAsset, chartStock;
+        let allHistoryData = null;
+        let currentStocksData = [];
+
+        function getContext(id) {
+            const canvas = document.getElementById(id);
+            return canvas ? canvas.getContext('2d') : null;
+        }
+
+        // 数値フォーマット
+        function formatCurrency(val) {
+            if (val === undefined || val === null || val === "") return '...';
+            let str = String(val).replace(/[^0-9.-]/g, '');
+            let num = parseFloat(str);
+            if (isNaN(num)) return '...';
+            return '¥ ' + Math.round(num).toLocaleString();
+        }
+        
+        // ドル表示用
+        function formatUSD(val) {
+            if (val === undefined || val === null || val === "") return '...';
+            return val.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+
+        // 数値パーサー
+        function parseNumber(val) {
+            if (!val) return 0;
+            let str = String(val).replace(/[^0-9.-]/g, '');
+            let num = parseFloat(str);
+            return isNaN(num) ? 0 : num;
+        }
+
+        // 持株比率パーサー
+        function parseRatio(val) {
+            if (!val) return 0;
+            let str = String(val).replace(/[% ]/g, '');
+            let num = parseFloat(str);
+            if (isNaN(num)) return 0;
+            if (Math.abs(num) <= 1 && num !== 0) return num * 100;
+            return num;
+        }
+
+        function formatDateLabel(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr; 
+            const year = date.getFullYear();
+            const month = ('0' + (date.getMonth() + 1)).slice(-2);
+            return `${year}-${month}`;
+        }
+
+        function updateChartPeriod(months) {
+            if (!allHistoryData || !chartTrend) return;
+            let sliceCount = parseInt(months);
+            let newData = { labels: [], crypto: [], stock: [], trust: [], cash: [] };
+
+            if (sliceCount === 0 || sliceCount > allHistoryData.labels.length) {
+                newData.labels = allHistoryData.labels;
+                newData.crypto = allHistoryData.crypto;
+                newData.stock = allHistoryData.stock;
+                newData.trust = allHistoryData.trust;
+                newData.cash = allHistoryData.cash;
+            } else {
+                newData.labels = allHistoryData.labels.slice(-sliceCount);
+                newData.crypto = allHistoryData.crypto.slice(-sliceCount);
+                newData.stock = allHistoryData.stock.slice(-sliceCount);
+                newData.trust = allHistoryData.trust.slice(-sliceCount);
+                newData.cash = allHistoryData.cash.slice(-sliceCount);
+            }
+
+            const formattedLabels = newData.labels.map(label => formatDateLabel(label));
+            chartTrend.data.labels = formattedLabels;
+            chartTrend.data.datasets[0].data = newData.crypto.map(parseNumber);
+            chartTrend.data.datasets[1].data = newData.stock.map(parseNumber);
+            chartTrend.data.datasets[2].data = newData.trust.map(parseNumber);
+            chartTrend.data.datasets[3].data = newData.cash.map(parseNumber);
+            chartTrend.update();
+        }
+
+        function getAvatarColor(name) {
+            const colors = ['bg-red-500', 'bg-orange-500', 'bg-amber-500', 'bg-yellow-500', 'bg-lime-500', 'bg-green-500', 'bg-emerald-500', 'bg-teal-500', 'bg-cyan-500', 'bg-sky-500', 'bg-blue-500', 'bg-indigo-500', 'bg-violet-500', 'bg-purple-500', 'bg-fuchsia-500', 'bg-pink-500', 'bg-rose-500'];
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) { hash = name.charCodeAt(i) + ((hash << 5) - hash); }
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        function getInitials(name) {
+            if (!name) return '?';
+            if (name.match(/^[A-Za-z0-9\s.,&]+$/)) {
+                const parts = name.split(' ').filter(part => part.length > 0);
+                if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+                return name.substring(0, 2).toUpperCase();
+            }
+            return name.charAt(0);
+        }
+
+        function getLogoUrl(name) {
+            const sortedKeys = Object.keys(DOMAIN_MAP).sort((a, b) => b.length - a.length);
+            for (const key of sortedKeys) {
+                const domain = DOMAIN_MAP[key];
+                if (key.length <= 3) {
+                    const regex = new RegExp(`(^|\\s|\\()${key}($|\\s|\\))`, 'i');
+                    if (regex.test(name)) {
+                        if (domain.startsWith('http')) return domain;
+                        return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+                    }
+                } else {
+                    if (name.toLowerCase().includes(key.toLowerCase())) {
+                        if (domain.startsWith('http')) return domain;
+                        return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+                    }
+                }
+            }
+            let cleaned = name.toLowerCase().replace(/\s+(inc|corp|ltd|co|hd|group|holdings)\.?$/i, '').replace(/[^a-z0-9]/g, ''); 
+            return `https://www.google.com/s2/favicons?domain=${cleaned}.com&sz=128`;
+        }
+
+        // ★TradingViewのシンボルを推測する関数（強化版）★
+        function getTradingViewSymbol(name) {
+            // 1. マップから直接検索 (完全一致または部分一致)
+            // キーが長い順にソートしておく
+            const sortedKeys = Object.keys(TICKER_MAP).sort((a, b) => b.length - a.length);
+            for (const key of sortedKeys) {
+                if (name.includes(key)) return TICKER_MAP[key];
+            }
+            
+            // 2. 4桁の数字が含まれていれば日本株とみなす (例: "7203 トヨタ")
+            const jpMatch = name.match(/[0-9]{4}/);
+            if (jpMatch) {
+                return `TSE:${jpMatch[0]}`;
+            }
+
+            // 3. 括弧内のティッカーを探す (例: "Broadcom Inc (AVGO)")
+            const usMatch = name.match(/\(([A-Z]+)\)/);
+            if (usMatch) {
+                return `NASDAQ:${usMatch[1]}`; // デフォルトNASDAQ、外れたらごめん
+            }
+            
+            return null; 
+        }
+
+        // ★チャートを更新する関数★
+        function updateMarketChart(symbol) {
+            const container = document.getElementById('tradingview-container');
+            container.innerHTML = ''; // クリア
+            
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js';
+            script.async = true;
+            script.innerHTML = JSON.stringify({
+                "symbols": [[ symbol.split(':')[1] || symbol, symbol ]],
+                "chartOnly": false,
+                "width": "100%",
+                "height": "100%",
+                "locale": "ja",
+                "colorTheme": "dark",
+                "autosize": true,
+                "showVolume": false,
+                "showMA": false,
+                "hideDateRanges": false,
+                "hideMarketStatus": false,
+                "hideSymbolLogo": false,
+                "scalePosition": "right",
+                "scaleMode": "Normal",
+                "fontFamily": "-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif",
+                "fontSize": "10",
+                "noTimeScale": false,
+                "valuesTracking": "1",
+                "changeMode": "price-and-percent",
+                "chartType": "area",
+                "maLineColor": "#2962FF",
+                "maLineWidth": 1,
+                "maLength": 9,
+                "lineWidth": 2,
+                "lineType": 0,
+                "dateRanges": ["12m|1D"],
+                "lineColor": "rgba(59, 130, 246, 1)",
+                "bottomColor": "rgba(59, 130, 246, 0.1)",
+                "topColor": "rgba(59, 130, 246, 0.3)"
+            });
+            container.appendChild(script);
+        }
+
+        // 初期表示用
+        window.addEventListener('DOMContentLoaded', () => {
+             updateMarketChart("FOREXCOM:SPX500"); // 初期値はFOREXCOM版S&P500
+        });
+
+        function renderStocksTable() {
+            if (!currentStocksData || currentStocksData.length === 0) return;
+
+            const sortType = document.getElementById('stockSortSelector').value;
+            let sortedStocks = [...currentStocksData];
+
+            sortedStocks.sort((a, b) => {
+                let valA, valB;
+                switch (sortType) {
+                    case 'ratio': valA = parseRatio(a.ratio); valB = parseRatio(b.ratio); break;
+                    case 'value': valA = parseNumber(a.value); valB = parseNumber(b.value); break;
+                    case 'gain': valA = parseNumber(a.gain); valB = parseNumber(b.gain); break;
+                    case 'perf': valA = parseRatio(a.perf); valB = parseRatio(b.perf); break;
+                    default: valA = parseRatio(a.ratio); valB = parseRatio(b.ratio);
+                }
+                return valB - valA; 
+            });
+
+            const tbody = document.getElementById('stock-table-body');
+            tbody.innerHTML = ''; 
+
+            let totalStockVal = 0;
+            let totalStockGain = 0;
+            let chartLabels = [];
+            let chartData = [];
+            let chartColors = ['#f59e0b', '#3b82f6', '#ef4444', '#10b981', '#8b5cf6', '#ec4899', '#6366f1'];
+
+            sortedStocks.forEach((stock, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-dark-700/50 transition-colors';
+                
+                const gainVal = parseNumber(stock.gain);
+                const gainClass = (gainVal >= 0) ? 'text-accent-green' : 'text-accent-red';
+                const gainSign = (gainVal >= 0) ? '+' : '';
+                const perfVal = parseRatio(stock.perf);
+                const perfSign = (perfVal >= 0) ? '+' : '';
+                const perfClass = (perfVal >= 0) ? 'bg-emerald-500/10 text-accent-green border-emerald-500/20' : 'bg-rose-500/10 text-accent-red border-rose-500/20';
+                const ratioVal = parseRatio(stock.ratio); 
+                const ratioDisplay = ratioVal.toFixed(1) + '%';
+                const ratioWidth = Math.min(ratioVal, 100) + '%';
+                const avatarColor = getAvatarColor(stock.name);
+                const initials = getInitials(stock.name);
+                const logoUrl = getLogoUrl(stock.name);
+
+                let iconHtml = '';
+                if (logoUrl) {
+                    iconHtml = `<div class="relative w-9 h-9 shrink-0"><img src="${logoUrl}" class="w-full h-full rounded-full object-contain bg-white p-0.5 border border-white/10 shadow-md" alt="${stock.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="${avatarColor} w-full h-full rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md border border-white/10 select-none absolute top-0 left-0" style="display:none;">${initials}</div></div>`;
+                } else {
+                    iconHtml = `<div class="${avatarColor} w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md border border-white/10 shrink-0 select-none">${initials}</div>`;
+                }
+
+                tr.innerHTML = `
+                    <td class="p-3 sm:p-4">
+                        <div class="flex items-center gap-3">
+                            ${iconHtml}
+                            <span class="font-bold text-slate-200 truncate max-w-[140px] sm:max-w-none" title="${stock.name}">${stock.name}</span>
+                        </div>
+                    </td>
+                    <td class="p-3 sm:p-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-slate-200 font-bold w-12">${ratioDisplay}</span>
+                            <div class="w-16 sm:w-24 bg-dark-900 h-2 rounded-full overflow-hidden"><div class="h-full" style="width: ${ratioWidth}; background-color: ${chartColors[index % chartColors.length]}"></div></div>
+                        </div>
+                    </td>
+                    <td class="p-3 sm:p-4 text-right font-bold text-slate-200">${formatCurrency(stock.value)}</td>
+                    <td class="p-3 sm:p-4 text-right font-bold ${gainClass}">${gainSign}${Math.round(parseNumber(stock.gain)).toLocaleString()}</td>
+                    <td class="p-3 sm:p-4 text-right"><span class="${perfClass} px-2 py-1 rounded text-xs font-bold border inline-flex justify-center items-center w-[70px] leading-none">${perfSign}${perfVal.toFixed(1)}%</span></td>
+                `;
+                tbody.appendChild(tr);
+
+                totalStockVal += parseNumber(stock.value);
+                totalStockGain += parseNumber(stock.gain);
+                chartLabels.push(stock.name);
+                chartData.push(parseNumber(stock.value));
+            });
+
+            document.getElementById('total-stock-val').innerText = formatCurrency(totalStockVal);
+            const totalGainClass = (totalStockGain >= 0) ? 'text-accent-green' : 'text-accent-red';
+            const totalGainSign = (totalStockGain >= 0) ? '+' : '';
+            document.getElementById('total-stock-gain').className = `text-sm sm:text-lg font-bold ${totalGainClass}`;
+            document.getElementById('total-stock-gain').innerText = totalGainSign + Math.round(totalStockGain).toLocaleString();
+
+            const totalCost = totalStockVal - totalStockGain;
+            let totalPerfVal = 0;
+            if (totalCost !== 0) totalPerfVal = (totalStockGain / totalCost) * 100;
+            const totalPerfSign = (totalPerfVal >= 0) ? '+' : '';
+            const totalPerfClass = (totalPerfVal >= 0) ? 'text-accent-green' : 'text-accent-red';
+            document.getElementById('total-stock-perf').className = `text-sm sm:text-lg font-bold ${totalPerfClass}`;
+            document.getElementById('total-stock-perf').innerText = `${totalPerfSign}${totalPerfVal.toFixed(2)}%`;
+        }
+
+        async function fetchSheetData() {
+            document.getElementById('display-total').innerText = "Loading...";
+            
+            if (typeof google !== 'undefined' && google.script) {
+                google.script.run.withSuccessHandler(renderDashboard).withFailureHandler(onFailure).getData();
+            } else {
+                console.log("Fetching live data via HTTP...");
+                const fetchUrl = API_URL.includes('?') ? API_URL + '&json=1' : API_URL + '?json=1';
+                try {
+                    const response = await fetch(fetchUrl);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const data = await response.json();
+                    renderDashboard(data);
+                } catch (error) {
+                    onFailure(error);
+                    console.error("Fetch failed. Make sure the GAS deployment is 'Anyone' (access: anonymous).", error);
+                }
+            }
+        }
+
+        function renderDashboard(data) {
+            if (typeof data === 'string') data = JSON.parse(data);
+            console.log("Fetched Data:", data);
+
+            document.getElementById('display-total').innerText = formatCurrency(data.total);
+            document.getElementById('display-cash').innerText = formatCurrency(data.cash);
+            document.getElementById('display-stock').innerText = formatCurrency(data.stock);
+            document.getElementById('display-trust').innerText = formatCurrency(data.trust);
+            document.getElementById('display-crypto').innerText = formatCurrency(data.crypto);
+
+            const momVal = parseNumber(data.mom); 
+            const totalVal = parseNumber(data.total); 
+            let momText = '0%';
+            let diffText = '...';
+            let isPositive = true;
+            let percentageForDisplay = 0; 
+            let percentageForCalc = 0;   
+            if (Math.abs(momVal) <= 1 && momVal !== 0) {
+                    percentageForDisplay = momVal * 100;
+                    percentageForCalc = momVal;
+            } else {
+                    percentageForDisplay = momVal;
+                    percentageForCalc = momVal / 100;
+            }
+            isPositive = percentageForDisplay >= 0;
+            momText = (percentageForDisplay > 0 ? '+' : '') + percentageForDisplay.toFixed(2) + '%';
+            if (totalVal) {
+                const lastMonthTotal = totalVal / (1 + percentageForCalc);
+                const diffVal = totalVal - lastMonthTotal;
+                diffText = (diffVal > 0 ? '+' : '') + Math.round(diffVal).toLocaleString();
+            }
+            document.getElementById('display-mom').innerText = momText;
+            document.getElementById('display-mom-diff').innerText = diffText;
+            const momContainer = document.getElementById('mom-container');
+            const momIcon = document.getElementById('mom-icon');
+            if (isPositive) {
+                momContainer.className = "flex items-center text-xs text-accent-green font-medium";
+                momIcon.className = "fa-solid fa-arrow-trend-up mr-1";
+            } else {
+                momContainer.className = "flex items-center text-xs text-accent-red font-medium";
+                momIcon.className = "fa-solid fa-arrow-trend-down mr-1";
+            }
+
+            // ★ドロップダウンの更新★
+            if (data.stocks && data.stocks.length > 0) {
+                const selector = document.getElementById('marketSymbolSelector');
+                // 既存のオプションをクリア（S&P 500以外）
+                selector.innerHTML = '<option value="FOREXCOM:SPX500">S&P 500</option><option value="FOREXCOM:NAS100">NASDAQ 100</option><option value="FX:USDJPY">USD/JPY</option>'; // NASDAQとUSDJPYを追加
+                
+                // 除外リスト
+                const excludeList = ["NTT", "任天堂", "日清食品", "日清食品HD"]; 
+
+                data.stocks.forEach(stock => {
+                    // 除外チェック
+                    if (excludeList.some(excluded => stock.name.includes(excluded))) return;
+
+                    const ticker = getTradingViewSymbol(stock.name);
+                    if (ticker) {
+                        const option = document.createElement('option');
+                        option.value = ticker;
+                        option.text = stock.name;
+                        selector.appendChild(option);
+                    }
+                });
+            }
+
+            const total = totalVal || 1;
+            const pCash = Math.round((parseNumber(data.cash) / total) * 100);
+            const pStock = Math.round((parseNumber(data.stock) / total) * 100);
+            const pTrust = Math.round((parseNumber(data.trust) / total) * 100);
+            const pCrypto = Math.round((parseNumber(data.crypto) / total) * 100);
+
+            document.getElementById('percent-cash').innerText = pCash + '%';
+            document.getElementById('percent-stock').innerText = pStock + '%';
+            document.getElementById('percent-trust').innerText = pTrust + '%';
+            document.getElementById('percent-crypto').innerText = pCrypto + '%';
+
+            document.getElementById('bar-cash').style.width = pCash + '%';
+            document.getElementById('bar-stock').style.width = pStock + '%';
+            document.getElementById('bar-trust').style.width = pTrust + '%';
+            document.getElementById('bar-crypto').style.width = pCrypto + '%';
+
+            if (data.stocks && data.stocks.length > 0) {
+                currentStocksData = data.stocks;
+                renderStocksTable();
+            } else {
+                document.getElementById('stock-table-body').innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">No stock data available.</td></tr>';
+            }
+
+            const budgetBody = document.getElementById('annual-budget-body');
+            if (data.budgets && data.budgets.length > 0) {
+                budgetBody.innerHTML = '';
+                let sumLastYear = 0, sumBudget = 0, sumMonthly = 0, sumCurrent = 0, sumRemain = 0;
+                data.budgets.forEach(b => {
+                    const monthly = b.monthly !== undefined ? parseNumber(b.monthly) : Math.round(b.budget / 12);
+                    const remain = b.remain !== undefined ? parseNumber(b.remain) : (b.budget - b.current);
+                    sumLastYear += parseNumber(b.lastYear);
+                    sumBudget += parseNumber(b.budget);
+                    sumMonthly += monthly;
+                    sumCurrent += parseNumber(b.current);
+                    sumRemain += remain;
+                    let remainClass = 'text-accent-green font-bold';
+                    if (remain < 0) remainClass = 'text-rose-500 font-bold';
+                    else if (remain === 0) remainClass = 'text-slate-500 font-bold';
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-dark-700/50 transition-colors';
+                    tr.innerHTML = `<td class="p-3 sm:p-4 font-bold text-slate-200 sticky left-0 bg-dark-800 border-r border-dark-700">${b.category}</td><td class="p-3 sm:p-4 text-right text-slate-500">${formatCurrency(b.lastYear)}</td><td class="p-3 sm:p-4 text-right text-slate-200 font-medium">${formatCurrency(b.budget)}</td><td class="p-3 sm:p-4 text-right text-slate-400">${formatCurrency(monthly)}</td><td class="p-3 sm:p-4 text-right text-slate-200">${formatCurrency(b.current)}</td><td class="p-3 sm:p-4 text-right ${remainClass}">${formatCurrency(remain)}</td>`;
+                    budgetBody.appendChild(tr);
+                });
+                const trTotal = document.createElement('tr');
+                trTotal.className = 'bg-dark-900 font-bold border-t-2 border-dark-700';
+                trTotal.innerHTML = `<td class="p-3 sm:p-4 text-emerald-400 sticky left-0 bg-dark-900 border-r border-dark-700">合計</td><td class="p-3 sm:p-4 text-right text-slate-500">${formatCurrency(sumLastYear)}</td><td class="p-3 sm:p-4 text-right text-white">${formatCurrency(sumBudget)}</td><td class="p-3 sm:p-4 text-right text-slate-400">${formatCurrency(sumMonthly)}</td><td class="p-3 sm:p-4 text-right text-white">${formatCurrency(sumCurrent)}</td><td class="p-3 sm:p-4 text-right text-indigo-400">${formatCurrency(sumRemain)}</td>`;
+                budgetBody.appendChild(trTotal);
+                document.getElementById('total-budget-remaining').innerText = formatCurrency(sumRemain);
+            } else {
+                budgetBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500">No budget data available.</td></tr>';
+            }
+
+            const monthlyBody = document.getElementById('monthly-budget-body');
+            if (data.monthlyBudgets && data.monthlyBudgets.length > 0) {
+                monthlyBody.innerHTML = '';
+                let mSumBudget = 0, mSumActual = 0, mSumDiff = 0;
+                data.monthlyBudgets.forEach(mb => {
+                    mSumBudget += parseNumber(mb.budget);
+                    mSumActual += parseNumber(mb.actual);
+                    mSumDiff += parseNumber(mb.diff);
+                    let diffClass = 'text-accent-green font-bold';
+                    if (mb.diff < 0) diffClass = 'text-rose-500 font-bold';
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-dark-700/50';
+                    tr.innerHTML = `<td class="p-3 sm:p-4 font-bold text-slate-200">${mb.category}</td><td class="p-3 sm:p-4 text-right text-slate-500">${formatCurrency(mb.budget)}</td><td class="p-3 sm:p-4 text-right text-slate-200">${formatCurrency(mb.actual)}</td><td class="p-3 sm:p-4 text-right ${diffClass}">${formatCurrency(mb.diff)}</td>`;
+                    monthlyBody.appendChild(tr);
+                });
+                const trMTotal = document.createElement('tr');
+                trMTotal.className = 'bg-dark-900 font-bold border-t-2 border-dark-700';
+                trMTotal.innerHTML = `<td class="p-3 sm:p-4 text-emerald-400">合計</td><td class="p-3 sm:p-4 text-right text-slate-500">${formatCurrency(mSumBudget)}</td><td class="p-3 sm:p-4 text-right text-white">${formatCurrency(mSumActual)}</td><td class="p-3 sm:p-4 text-right text-emerald-400">${formatCurrency(mSumDiff)}</td>`;
+                monthlyBody.appendChild(trMTotal);
+                const diffElem = document.getElementById('monthly-budget-diff');
+                diffElem.innerText = (mSumDiff >= 0 ? '+' : '') + formatCurrency(mSumDiff);
+                diffElem.className = mSumDiff >= 0 ? 'text-emerald-400 font-bold ml-1' : 'text-rose-500 font-bold ml-1';
+            } else {
+                monthlyBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">No monthly data.</td></tr>';
+            }
+
+            if (data.history) {
+                allHistoryData = data.history;
+                const currentPeriod = document.getElementById('periodSelector').value;
+                updateChartPeriod(currentPeriod);
+            }
+        }
+
+        function onFailure(error) {
+            console.error("データ取得エラー:", error);
+            document.getElementById('display-total').innerText = "Error";
+            document.getElementById('stock-table-body').innerHTML = '<tr><td colspan="5" class="p-4 text-center text-rose-500">Failed to load data.</td></tr>';
+        }
+
+        window.onload = function() {
+            initCharts();
+            fetchSheetData();
+        };
+
+        function initCharts() {
+            const ctxTrend = getContext('trendChart');
+            if (ctxTrend) {
+                chartTrend = new Chart(ctxTrend, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            { label: '暗号資産', data: [], borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.6)', fill: true, tension: 0.4 },
+                            { label: '米国株', data: [], borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.6)', fill: true, tension: 0.4 },
+                            { label: '投資信託', data: [], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.6)', fill: true, tension: 0.4 },
+                            { label: '現金・預金', data: [], borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.6)', fill: true, tension: 0.4 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 10, usePointStyle: true, color: '#94a3b8' } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) label += ': ';
+                                        if (context.parsed.y !== null) label += '¥ ' + context.parsed.y.toLocaleString();
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: { 
+                                stacked: true, 
+                                grid: { borderDash: [2, 4], drawBorder: false, color: '#334155' }, 
+                                ticks: { callback: function(value) { return '¥ ' + value.toLocaleString(); }, color: '#94a3b8' } 
+                            },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

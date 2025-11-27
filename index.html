@@ -154,10 +154,10 @@
             </div>
         </div>
 
-        <!-- 4. Stock Details -->
+        <!-- 4. Stock Details (Responsive) -->
         <div class="mb-8">
             <div class="bg-dark-800 rounded-xl border border-dark-700 shadow-xl overflow-hidden flex flex-col">
-                <div class="p-4 sm:p-6 border-b border-dark-700 flex justify-between items-center shrink-0">
+                <div class="p-4 sm:p-6 border-b border-dark-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
                     <div class="flex flex-col gap-2 sm:gap-0 sm:flex-row sm:items-center">
                         <h3 class="text-lg font-bold text-white flex items-center gap-2 mr-4">
                             <i class="fa-solid fa-chart-simple text-amber-400"></i> 株式詳細
@@ -193,11 +193,11 @@
                     <table class="w-full text-left border-collapse whitespace-nowrap">
                         <thead class="sticky top-0 z-10">
                             <tr class="bg-dark-900 text-slate-400 text-xs sm:text-sm uppercase tracking-wider shadow-sm">
-                                <th class="p-3 sm:p-4 font-medium">会社名(ティッカー)</th>
-                                <th class="p-3 sm:p-4 font-medium">持株比率</th>
-                                <th class="p-3 sm:p-4 font-medium text-right">市場価額</th>
-                                <th class="p-3 sm:p-4 font-medium text-right">評価損益</th>
-                                <th class="p-3 sm:p-4 font-medium text-right">損益率</th>
+                                <th class="p-2 sm:p-4 font-medium">銘柄 / 価額</th>
+                                <th class="p-2 sm:p-4 font-medium hidden sm:table-cell">持株比率</th>
+                                <th class="p-2 sm:p-4 font-medium text-right hidden sm:table-cell">市場価額</th>
+                                <th class="p-2 sm:p-4 font-medium text-right">損益</th>
+                                <th class="p-2 sm:p-4 font-medium text-right hidden sm:table-cell">損益率</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-dark-700 text-xs sm:text-sm" id="stock-table-body">
@@ -580,27 +580,37 @@
 
                 let iconHtml = '';
                 if (logoUrl) {
-                    iconHtml = `<div class="relative w-9 h-9 shrink-0"><img src="${logoUrl}" class="w-full h-full rounded-full object-contain bg-white p-0.5 border border-white/10 shadow-md" alt="${stock.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="${avatarColor} w-full h-full rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md border border-white/10 select-none absolute top-0 left-0" style="display:none;">${initials}</div></div>`;
+                    iconHtml = `<div class="relative w-8 h-8 sm:w-9 sm:h-9 shrink-0"><img src="${logoUrl}" class="w-full h-full rounded-full object-contain bg-white p-0.5 border border-white/10 shadow-md" alt="${stock.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="${avatarColor} w-full h-full rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md border border-white/10 select-none absolute top-0 left-0" style="display:none;">${initials}</div></div>`;
                 } else {
-                    iconHtml = `<div class="${avatarColor} w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md border border-white/10 shrink-0 select-none">${initials}</div>`;
+                    iconHtml = `<div class="${avatarColor} w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md border border-white/10 shrink-0 select-none">${initials}</div>`;
                 }
 
                 tr.innerHTML = `
-                    <td class="p-3 sm:p-4">
-                        <div class="flex items-center gap-3">
+                    <td class="p-2 sm:p-4">
+                        <div class="flex items-center gap-2 sm:gap-3">
                             ${iconHtml}
-                            <span class="font-bold text-slate-200 truncate max-w-[140px] sm:max-w-none" title="${stock.name}">${stock.name}</span>
+                            <div class="flex flex-col">
+                                <span class="font-bold text-slate-200 text-sm sm:text-base truncate max-w-[120px] sm:max-w-none" title="${stock.name}">${stock.name}</span>
+                                <span class="text-xs text-slate-500 sm:hidden font-medium">${formatCurrency(stock.value)}</span>
+                            </div>
                         </div>
                     </td>
-                    <td class="p-3 sm:p-4">
+                    <td class="p-2 sm:p-4 hidden sm:table-cell">
                         <div class="flex items-center gap-2">
                             <span class="text-slate-200 font-bold w-12">${ratioDisplay}</span>
                             <div class="w-16 sm:w-24 bg-dark-900 h-2 rounded-full overflow-hidden"><div class="h-full" style="width: ${ratioWidth}; background-color: ${chartColors[index % chartColors.length]}"></div></div>
                         </div>
                     </td>
-                    <td class="p-3 sm:p-4 text-right font-bold text-slate-200">${formatCurrency(stock.value)}</td>
-                    <td class="p-3 sm:p-4 text-right font-bold ${gainClass}">${gainSign}${Math.round(parseNumber(stock.gain)).toLocaleString()}</td>
-                    <td class="p-3 sm:p-4 text-right"><span class="${perfClass} px-2 py-1 rounded text-xs font-bold border inline-flex justify-center items-center w-[70px] leading-none">${perfSign}${perfVal.toFixed(1)}%</span></td>
+                    <td class="p-2 sm:p-4 text-right font-bold text-slate-200 hidden sm:table-cell">${formatCurrency(stock.value)}</td>
+                    <td class="p-2 sm:p-4 text-right">
+                        <div class="flex flex-col items-end">
+                            <span class="font-bold ${gainClass} text-sm sm:text-base">${gainSign}${Math.round(parseNumber(stock.gain)).toLocaleString()}</span>
+                            <span class="sm:hidden mt-1 ${perfClass} px-1.5 py-0.5 rounded text-[10px] font-bold border leading-none">${perfSign}${perfVal.toFixed(1)}%</span>
+                        </div>
+                    </td>
+                    <td class="p-2 sm:p-4 text-right hidden sm:table-cell">
+                        <span class="${perfClass} px-2 py-1 rounded text-xs font-bold border inline-flex justify-center items-center w-[70px] leading-none">${perfSign}${perfVal.toFixed(1)}%</span>
+                    </td>
                 `;
                 tbody.appendChild(tr);
 
@@ -686,6 +696,15 @@
             } else {
                 momContainer.className = "flex items-center text-xs text-accent-red font-medium";
                 momIcon.className = "fa-solid fa-arrow-trend-down mr-1";
+            }
+
+            // ★S&P500ロジック★
+            if (data.sp500) {
+                const price = data.sp500.price || 0;
+                // 表示更新のみ
+                if (document.getElementById('sp-price')) {
+                     document.getElementById('sp-price').innerText = formatUSD(price);
+                }
             }
 
             // ★ドロップダウンの更新★

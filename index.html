@@ -390,8 +390,12 @@
                     <thead class="sticky top-0 z-10 glass-header">
                         <tr class="text-slate-400 text-xs uppercase tracking-wider border-b border-dark-700">
                             <th class="p-3 sm:p-4 font-semibold pl-5">費用</th>
-                            <th class="p-3 sm:p-4 font-semibold text-right text-slate-500">予算</th>
-                            <th class="p-3 sm:p-4 font-semibold text-right text-slate-200">出費</th>
+                            <!-- PC表示用ヘッダー -->
+                            <th class="p-3 sm:p-4 font-semibold text-right text-slate-500 hidden sm:table-cell">予算</th>
+                            <th class="p-3 sm:p-4 font-semibold text-right text-slate-200 hidden sm:table-cell">出費</th>
+                            <!-- モバイル表示用ヘッダー -->
+                            <th class="p-3 sm:p-4 font-semibold text-right text-slate-400 sm:hidden">予算 / 実績</th>
+                            
                             <th class="p-3 sm:p-4 font-semibold text-right pr-5">差額</th>
                         </tr>
                     </thead>

@@ -92,11 +92,11 @@
                         <i class="fa-solid fa-file-excel text-sm"></i>
                     </a>
 
-                    <!-- 2. ドル円 (モバイルはアイコンのみ) -->
-                    <button onclick="toggleCurrency()" class="flex items-center justify-center sm:justify-start gap-1.5 w-8 h-8 sm:w-auto text-xs text-slate-400 bg-dark-800/50 hover:bg-dark-700 hover:text-white transition-colors sm:px-2 sm:py-1 rounded border border-dark-700/50 group" title="円/ドル切り替え">
+                    <!-- 2. ドル円 (モバイルでもレート表示) -->
+                    <button onclick="toggleCurrency()" class="flex items-center justify-center gap-1.5 h-8 text-xs text-slate-400 bg-dark-800/50 hover:bg-dark-700 hover:text-white transition-colors px-2 rounded border border-dark-700/50 group" title="円/ドル切り替え">
                         <i class="fa-solid fa-right-left text-slate-500 group-hover:text-amber-400 transition-colors"></i>
                         <span class="font-bold text-amber-500 text-[10px] sm:text-xs" id="currency-symbol">¥</span>
-                        <span id="header-usdjpy" class="font-num font-medium text-slate-300 hidden sm:inline">--.--</span>
+                        <span id="header-usdjpy" class="font-num font-medium text-slate-300 text-[10px] sm:text-xs">--.--</span>
                     </button>
 
                     <!-- 3. シークレットモード (モバイルはアイコンのみ) -->

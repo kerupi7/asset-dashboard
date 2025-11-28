@@ -284,7 +284,7 @@
         </div>
 
         <!-- 6. Monthly Budget -->
-        <div class="bg-dark-800 rounded-2xl border border-dark-700 shadow-xl overflow-hidden flex flex-col">
+        <div class="bg-dark-800 rounded-2xl border border-dark-700 shadow-xl overflow-hidden mt-8 flex flex-col">
             <div class="p-4 sm:p-6 border-b border-dark-700 flex justify-between items-center shrink-0 bg-dark-800">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2"><span class="w-1 h-6 bg-accent-green rounded-full mr-1"></span> 今月予算</h3>
                 <div class="text-xs sm:text-sm text-slate-400">
@@ -298,13 +298,16 @@
                     <thead class="sticky top-0 z-10 glass-header">
                         <tr class="text-slate-400 text-xs uppercase tracking-wider border-b border-dark-700">
                             <th class="p-3 sm:p-4 font-semibold pl-5">費用</th>
-                            <th class="p-3 sm:p-4 font-semibold text-right text-slate-500">予算</th>
-                            <th class="p-3 sm:p-4 font-semibold text-right text-slate-200">出費</th>
+                            <!-- PC表示用 -->
+                            <th class="p-3 sm:p-4 font-semibold text-right text-slate-500 hidden sm:table-cell">予算</th>
+                            <th class="p-3 sm:p-4 font-semibold text-right text-slate-200 hidden sm:table-cell">出費</th>
+                            <!-- スマホ表示用 (統合) -->
+                            <th class="p-3 sm:p-4 font-semibold text-right text-slate-500 sm:hidden">予算 / 出費</th>
                             <th class="p-3 sm:p-4 font-semibold text-right pr-5">差額</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-dark-700/50 text-sm font-num" id="monthly-budget-body">
-                        <tr><td colspan="4" class="p-8 text-center text-slate-500 italic">Loading data...</td></tr>
+                        <tr><td colspan="5" class="p-8 text-center text-slate-500 italic">Loading data...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -841,18 +844,50 @@
                     if (mb.diff < 0) diffClass = 'text-rose-400 font-bold';
                     const tr = document.createElement('tr');
                     tr.className = 'hover:bg-slate-800/50 transition-colors border-b border-dark-700/30 last:border-0';
-                    tr.innerHTML = `<td class="p-3 sm:p-4 font-semibold pl-5 text-slate-200">${mb.category}</td><td class="p-3 sm:p-4 text-right text-slate-500 font-num">${formatCurrency(mb.budget)}</td><td class="p-3 sm:p-4 text-right text-slate-200 font-num">${formatCurrency(mb.actual)}</td><td class="p-3 sm:p-4 text-right ${diffClass} font-num pr-5">${formatCurrency(mb.diff)}</td>`;
+                    
+                    tr.innerHTML = `
+                        <td class="p-3 sm:p-4 font-semibold pl-5 text-slate-200">${mb.category}</td>
+                        
+                        <!-- PC用: 個別カラム -->
+                        <td class="p-3 sm:p-4 text-right text-slate-500 font-num hidden sm:table-cell">${formatCurrency(mb.budget)}</td>
+                        <td class="p-3 sm:p-4 text-right text-slate-200 font-num hidden sm:table-cell">${formatCurrency(mb.actual)}</td>
+                        
+                        <!-- スマホ用: 統合カラム -->
+                        <td class="p-3 sm:p-4 text-right sm:hidden">
+                            <div class="flex flex-col items-end text-xs">
+                                <span class="text-slate-500 font-num">${formatCurrency(mb.budget)}</span>
+                                <span class="text-slate-200 font-num font-medium">${formatCurrency(mb.actual)}</span>
+                            </div>
+                        </td>
+
+                        <td class="p-3 sm:p-4 text-right ${diffClass} font-num pr-5">${formatCurrency(mb.diff)}</td>
+                    `;
                     monthlyBody.appendChild(tr);
                 });
+                
                 const trMTotal = document.createElement('tr');
                 trMTotal.className = 'bg-slate-800/80 font-bold border-t border-indigo-500/30';
-                trMTotal.innerHTML = `<td class="p-3 sm:p-4 text-emerald-400 pl-5">合計</td><td class="p-3 sm:p-4 text-right text-slate-500 font-num">${formatCurrency(mSumBudget)}</td><td class="p-3 sm:p-4 text-right text-white font-num">${formatCurrency(mSumActual)}</td><td class="p-3 sm:p-4 text-right text-emerald-400 font-num pr-5">${formatCurrency(mSumDiff)}</td>`;
+                trMTotal.innerHTML = `
+                    <td class="p-3 sm:p-4 text-emerald-400 pl-5">合計</td>
+                    <!-- PC用 -->
+                    <td class="p-3 sm:p-4 text-right text-slate-500 font-num hidden sm:table-cell">${formatCurrency(mSumBudget)}</td>
+                    <td class="p-3 sm:p-4 text-right text-white font-num hidden sm:table-cell">${formatCurrency(mSumActual)}</td>
+                    <!-- スマホ用 -->
+                    <td class="p-3 sm:p-4 text-right sm:hidden">
+                         <div class="flex flex-col items-end text-xs">
+                            <span class="text-slate-500 font-num">${formatCurrency(mSumBudget)}</span>
+                            <span class="text-white font-num">${formatCurrency(mSumActual)}</span>
+                        </div>
+                    </td>
+                    <td class="p-3 sm:p-4 text-right text-emerald-400 font-num pr-5">${formatCurrency(mSumDiff)}</td>
+                `;
                 monthlyBody.appendChild(trMTotal);
+                
                 const diffElem = document.getElementById('monthly-budget-diff');
                 diffElem.innerText = (mSumDiff >= 0 ? '+' : '') + formatCurrency(mSumDiff);
                 diffElem.className = mSumDiff >= 0 ? 'text-emerald-400 font-bold ml-1 font-num' : 'text-rose-400 font-bold ml-1 font-num';
             } else {
-                monthlyBody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-slate-500 italic">No monthly data.</td></tr>';
+                monthlyBody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-500 italic">No monthly data.</td></tr>';
             }
 
             if (data.history) {

@@ -92,7 +92,7 @@
                         <i class="fa-solid fa-file-excel text-sm"></i>
                     </a>
 
-                    <!-- 2. ドル円 (モバイルでもレート表示) -->
+                    <!-- 2. ドル円 (モバイルでもレート表示・編集機能なし) -->
                     <button onclick="toggleCurrency()" class="flex items-center justify-center gap-1.5 h-8 text-xs text-slate-400 bg-dark-800/50 hover:bg-dark-700 hover:text-white transition-colors px-2 rounded border border-dark-700/50 group" title="円/ドル切り替え">
                         <i class="fa-solid fa-right-left text-slate-500 group-hover:text-amber-400 transition-colors"></i>
                         <span class="font-bold text-amber-500 text-[10px] sm:text-xs" id="currency-symbol">¥</span>
@@ -500,13 +500,12 @@
         const DOMAIN_MAP = {
             "NTT": "group.ntt", "任天堂": "nintendo.co.jp", "日清食品": "nissin.com", "トヨタ": "global.toyota", "ソニー": "sony.com", "ソフトバンク": "softbank.jp", "楽天": "rakuten.co.jp", "三菱": "mitsubishicorp.com", "eMAXIS": "mukam.jp", "ユニクロ": "fastretailing.com", "ファーストリテイリング": "fastretailing.com", "キーエンス": "keyence.co.jp", "東京エレクトロン": "tel.co.jp", "KDDI": "kddi.com", "オリエンタルランド": "olc.co.jp", "ホンダ": "global.honda", "信越化学": "shinetsu.co.jp", "伊藤忠": "itochu.co.jp", "三井住友": "smfg.co.jp",
             "AAPL": "apple.com", "Apple": "apple.com", "MSFT": "microsoft.com", "Microsoft": "microsoft.com", "GOOGL": "google.com", "GOOG": "google.com", "Google": "google.com", "AMZN": "amazon.com", "Amazon": "amazon.com", "META": "meta.com", "Meta": "meta.com", "TSLA": "tesla.com", "Tesla": "tesla.com", "NVDA": "nvidia.com", "NVIDIA": "nvidia.com", "CRM": "salesforce.com", "Salesforce": "salesforce.com", "V": "visa.com", "Visa": "visa.com", "JNJ": "jnj.com", "PG": "pg.com", "KO": "coca-cola.com", "PEP": "pepsi.com", "COST": "costco.com", "WMT": "walmart.com", "DIS": "disney.com", "NFLX": "netflix.com", "AVGO": "broadcom.com", "Broadcom": "broadcom.com", "ABBV": "abbvie.com", "AbbVie": "abbvie.com", "VRTX": "vrtx.com", "Vertex": "vrtx.com", "LLY": "lilly.com", "Eli Lilly": "lilly.com", "UNH": "unitedhealthgroup.com", "XOM": "exxonmobil.com", "JPM": "jpmorganchase.com", "MA": "mastercard.com", "HD": "homedepot.com", "CVX": "chevron.com", "MRK": "merck.com", "ABT": "abbott.com", "PFE": "pfizer.com", "INTC": "intel.com", "AMD": "amd.com",
-            "RTX": "NYSE:RTX", "Raytheon": "NYSE:RTX",
-            "NEE": "NYSE:NEE", "NextEra": "NYSE:NEE",
-            "SBUX": "NASDAQ:SBUX", "Starbucks": "NASDAQ:SBUX",
-            "CRM": "NYSE:CRM", "Salesforce": "NYSE:CRM",
-            "CDNS": "NASDAQ:CDNS", "Cadence": "NASDAQ:CDNS",
-            "Bitcoin": "BITSTAMP:BTCUSD", "BTC": "BITSTAMP:BTCUSD",
-            "Ethereum": "BITSTAMP:ETHUSD", "ETH": "BITSTAMP:ETHUSD"
+            "RTX": "rtx.com", "Raytheon": "rtx.com",
+            "NEE": "nexteraenergy.com", "NextEra": "nexteraenergy.com",
+            "SBUX": "starbucks.com", "Starbucks": "starbucks.com",
+            "CRM": "salesforce.com", "Salesforce": "salesforce.com",
+            "CDNS": "cadence.com", "Cadence": "cadence.com",
+            "Bitcoin": "https://cryptologos.cc/logos/bitcoin-btc-logo.png", "Ethereum": "https://cryptologos.cc/logos/ethereum-eth-logo.png"
         };
 
         const TICKER_MAP = {
@@ -586,29 +585,6 @@
             } else {
                 icon.className = "fa-regular fa-eye";
                 label.innerText = "表示中";
-            }
-        }
-
-        // --- New Feature: Rate Edit Logic ---
-        function editRate() {
-            const currentVal = document.getElementById('header-usdjpy').innerText;
-            const newVal = prompt("現在のUSD/JPYレートを入力してください:", currentVal !== '--.--' ? currentVal : "150.00");
-            
-            if (newVal !== null && newVal.trim() !== "") {
-                const rate = parseFloat(newVal);
-                if (!isNaN(rate) && rate > 0) {
-                    currentRate = rate;
-                    document.getElementById('header-usdjpy').innerText = rate.toFixed(2);
-                    document.getElementById('header-usdjpy').classList.add('text-amber-400'); // 手動更新されたことを色で示す
-                    
-                    // 全体を再描画
-                    if (window.fetchedData) {
-                        // データ内のレート情報ではなく、手動設定したcurrentRateを使って再描画させたい
-                        renderDashboard(window.fetchedData, true); // true = manualRateOverride
-                    }
-                } else {
-                    alert("有効な数値を入力してください。");
-                }
             }
         }
 
